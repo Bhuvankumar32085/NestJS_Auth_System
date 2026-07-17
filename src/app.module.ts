@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -25,6 +26,8 @@ import { TransactionModule } from './transaction/transaction.module';
     CategoryModule,
 
     TransactionModule,
+
+    DashboardModule,
   ],
 
   controllers: [AppController],
