@@ -41,7 +41,7 @@ export class AuthService {
       console.log(message);
       const isMatch = await bcrypt.compare(
         logingDataDto.password,
-        data!.password,
+        data.password,
       );
 
       if (!isMatch) {
@@ -53,8 +53,8 @@ export class AuthService {
       }
 
       const accessToken = await this.jwtService.signAsync({
-        id: data!.id,
-        email: data!.email,
+        id: data.id,
+        email: data.email,
       });
 
       return {

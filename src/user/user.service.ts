@@ -1,4 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RegisterUserDto } from '../dto/regiserUser.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
@@ -19,11 +25,11 @@ export class UserService {
       });
 
       if (existsUser) {
-        return {
+        throw new ConflictException({
           success: false,
           message: 'User already exists with this email',
           data: null,
-        };
+        });
       } else {
         const user = this.userModel.create({
           fName: registerUserDto.fname,
@@ -40,6 +46,9 @@ export class UserService {
       }
     } catch (error) {
       console.error(error);
+      if (error instanceof ConflictException) {
+        throw error;
+      }
       return {
         success: false,
         message: 'Internal Error',
@@ -57,11 +66,11 @@ export class UserService {
       });
 
       if (!user) {
-        return {
+        throw new UnauthorizedException({
           success: false,
-          message: 'User Not Found In DB Plese Signup First',
+          message: 'Invalid Email or Password',
           data: null,
-        };
+        });
       } else {
         return {
           success: true,
@@ -70,12 +79,18 @@ export class UserService {
         };
       }
     } catch (error) {
-      console.error(error);
-      return {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException({
         success: false,
-        message: 'Server Error ',
+        message: 'Internal Server Error',
         data: null,
-      };
+      });
     }
   }
 }

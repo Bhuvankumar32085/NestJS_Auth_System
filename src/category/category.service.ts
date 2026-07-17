@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -56,11 +57,11 @@ export class CategoryService {
       });
 
       if (existingCategory) {
-        return {
+        throw new ConflictException({
           success: false,
           message: 'Category already exists',
           data: null,
-        };
+        });
       }
 
       const category = this.categoryRepository.create({
@@ -81,7 +82,10 @@ export class CategoryService {
     } catch (error) {
       console.error(error);
 
-      if (error instanceof BadRequestException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
 
