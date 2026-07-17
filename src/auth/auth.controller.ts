@@ -42,7 +42,7 @@ export class AuthController {
       };
     }
     return {
-      success: false,
+      success: true,
       message: 'Profile get successfully',
       data: user,
     };

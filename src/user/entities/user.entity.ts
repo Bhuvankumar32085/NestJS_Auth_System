@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Category } from '../../category/entities/category.entitiy';
+import { Transaction } from '../../transaction/entities/transaction.entity';
 
 @Entity('users')
 export class User {
@@ -37,6 +40,12 @@ export class User {
     length: 255,
   })
   password!: string;
+
+  @OneToMany(() => Category, (category) => category.user)
+  categories!: Category[];
+
+  @OneToMany(() => Transaction, (transaction) => transaction.user)
+  transactions!: Transaction[];
 
   @Column({
     type: 'varchar',
