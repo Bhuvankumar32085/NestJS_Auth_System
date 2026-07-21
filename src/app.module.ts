@@ -9,6 +9,7 @@ import { TransactionModule } from './transaction/transaction.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminModule } from './admin/admin.module';
 import { PlanModule } from './plan/plan.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -34,6 +35,8 @@ import { PlanModule } from './plan/plan.module';
     AdminModule,
 
     PlanModule,
+
+    SubscriptionModule,
   ],
 
   controllers: [AppController],

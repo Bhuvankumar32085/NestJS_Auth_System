@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Category } from '../../category/entities/category.entitiy';
 import { Transaction } from '../../transaction/entities/transaction.entity';
+import { Subscription } from '../../subscription/entities/subscription.entity';
 
 @Entity('users')
 export class User {
@@ -40,6 +41,9 @@ export class User {
     length: 255,
   })
   password!: string;
+
+  @OneToMany(() => Subscription, (subscription) => subscription.user)
+  subscriptions!: Subscription[];
 
   @OneToMany(() => Category, (category) => category.user)
   categories!: Category[];
