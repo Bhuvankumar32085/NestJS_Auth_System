@@ -2,6 +2,7 @@ import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AuthRequest } from '../auth/jwt-auth.guard';
+import { PaginationDto } from './dto/pagination.dto';
 
 @Controller('dashboard')
 export class DashboardController {
@@ -32,6 +33,18 @@ export class DashboardController {
       req.user.id as string,
       Number(month),
       Number(year),
+    );
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  getTransactions(
+    @Request() req: AuthRequest,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.getTransactions(
+      req.user.id as string,
+      paginationDto,
     );
   }
 }

@@ -10,6 +10,7 @@ import {
 } from '../transaction/entities/transaction.entity';
 import { Repository } from 'typeorm';
 import { Category } from '../category/entities/category.entitiy';
+import { PaginationDto } from './dto/pagination.dto';
 
 interface TotalIncomeResult {
   totalIncome: string;
@@ -213,5 +214,42 @@ export class DashboardService {
         data: null,
       });
     }
+  }
+
+  async getTransactions(userId: string, paginationDto: PaginationDto) {
+    const { page = 1, limit = 10 } = paginationDto;
+
+    const [transactions, total] = await this.transactionRepository.findAndCount(
+      {
+        where: {
+          user: {
+            id: userId,
+          },
+        },
+
+        relations: ['category'],
+
+        skip: (page - 1) * limit,
+
+        take: limit,
+
+        order: {
+          date: 'DESC',
+        },
+      },
+    );
+
+    return {
+      success: true,
+
+      data: transactions,
+
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

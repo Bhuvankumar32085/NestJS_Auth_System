@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AdminModule } from './admin/admin.module';
+import { PlanModule } from './plan/plan.module';
 
 @Module({
   imports: [
@@ -28,6 +30,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
     TransactionModule,
 
     DashboardModule,
+
+    AdminModule,
+
+    PlanModule,
   ],
 
   controllers: [AppController],
