@@ -10,9 +10,16 @@ import { User } from '../../user/entities/user.entity';
 import { Plan } from '../../plan/entities/plan.entitiy';
 
 export enum SubscriptionStatus {
+  PENDING = 'PENDING',
   ACTIVE = 'ACTIVE',
   EXPIRED = 'EXPIRED',
   CANCELLED = 'CANCELLED',
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
 }
 
 @Entity('subscriptions')
@@ -32,18 +39,41 @@ export class Subscription {
   })
   plan!: Plan;
 
-  @Column()
-  startDate!: Date;
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+  })
+  startDate!: Date | null;
 
-  @Column()
-  endDate!: Date;
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+  })
+  endDate!: Date | null;
 
   @Column({
     type: 'enum',
     enum: SubscriptionStatus,
-    default: SubscriptionStatus.ACTIVE,
+    default: SubscriptionStatus.PENDING,
   })
   status!: SubscriptionStatus;
+
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+  })
+  paymentStatus!: PaymentStatus;
+
+  @Column({
+    nullable: true,
+  })
+  razorpayOrderId!: string;
+
+  @Column({
+    nullable: true,
+  })
+  razorpayPaymentId!: string;
 
   @CreateDateColumn()
   createdAt!: Date;

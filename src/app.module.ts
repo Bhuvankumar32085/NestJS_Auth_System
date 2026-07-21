@@ -10,6 +10,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminModule } from './admin/admin.module';
 import { PlanModule } from './plan/plan.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -37,6 +38,8 @@ import { SubscriptionModule } from './subscription/subscription.module';
     PlanModule,
 
     SubscriptionModule,
+
+    PaymentModule,
   ],
 
   controllers: [AppController],
