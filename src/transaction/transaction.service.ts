@@ -10,6 +10,8 @@ import { Transaction } from './entities/transaction.entity';
 import { QueryFailedError, Repository } from 'typeorm';
 import { Category } from '../category/entities/category.entitiy';
 import { UpdateTransactionDto } from './dto/updateTransaction.dto';
+import { Response } from 'express';
+import { Parser } from 'json2csv';
 
 @Injectable()
 export class TransactionService {
@@ -291,6 +293,54 @@ export class TransactionService {
         message: 'Internal Server Error',
         data: null,
       });
+    }
+  }
+  
+  async exportTransactions(userId: string, res: Response): Promise<void> {
+    try {
+      const transactions = await this.transactionRepository.find({
+        where: {
+          user: {
+            id: userId,
+          },
+        },
+        relations: ['category'],
+        order: {
+          date: 'DESC',
+        },
+      });
+
+      if (!transactions.length) {
+        throw new NotFoundException('No transactions found to export.');
+      }
+
+      const csvData = transactions.map((transaction) => ({
+        Title: transaction.title,
+        Amount: transaction.amount,
+        Type: transaction.type,
+        Category: transaction.category.name,
+        Description: transaction.description ?? '',
+        Date: transaction.date,
+      }));
+
+      const parser = new Parser();
+
+      const csv = parser.parse(csvData);
+
+      res.setHeader('Content-Type', 'text/csv');
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="transactions.csv"',
+      );
+
+      res.status(200).send(csv);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to export transactions.');
     }
   }
 }

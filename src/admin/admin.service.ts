@@ -1,16 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PaginationDto } from './dto/pagination.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Transaction } from '../transaction/entities/transaction.entity';
 import { Repository } from 'typeorm';
 import { Category } from '../category/entities/category.entitiy';
 import { User } from '../user/entities/user.entity';
+import {
+  PaymentStatus,
+  Subscription,
+  SubscriptionStatus,
+} from '../subscription/entities/subscription.entity';
+import { GetSubscriptionsDto } from './dto/get.subscriptions.dto';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
+
+    @InjectRepository(Subscription)
+    private readonly subscriptionRepository: Repository<Subscription>,
 
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
@@ -147,5 +156,158 @@ export class AdminService {
         hasPreviousPage: page > 1,
       },
     };
+  }
+
+  async getSubscriptionStats() {
+    const [
+      totalSubscriptions,
+      activeSubscriptions,
+      expiredSubscriptions,
+      pendingSubscriptions,
+      cancelledSubscriptions,
+      successfulPayments,
+      failedPayments,
+      pendingPayments,
+    ] = await Promise.all([
+      this.subscriptionRepository.count(),
+
+      this.subscriptionRepository.count({
+        where: {
+          status: SubscriptionStatus.ACTIVE,
+        },
+      }),
+
+      this.subscriptionRepository.count({
+        where: {
+          status: SubscriptionStatus.EXPIRED,
+        },
+      }),
+
+      this.subscriptionRepository.count({
+        where: {
+          status: SubscriptionStatus.PENDING,
+        },
+      }),
+
+      this.subscriptionRepository.count({
+        where: {
+          status: SubscriptionStatus.CANCELLED,
+        },
+      }),
+
+      this.subscriptionRepository.count({
+        where: {
+          paymentStatus: PaymentStatus.SUCCESS,
+        },
+      }),
+
+      this.subscriptionRepository.count({
+        where: {
+          paymentStatus: PaymentStatus.FAILED,
+        },
+      }),
+
+      this.subscriptionRepository.count({
+        where: {
+          paymentStatus: PaymentStatus.PENDING,
+        },
+      }),
+    ]);
+
+    return {
+      totalSubscriptions,
+
+      subscriptions: {
+        active: activeSubscriptions,
+        expired: expiredSubscriptions,
+        pending: pendingSubscriptions,
+        cancelled: cancelledSubscriptions,
+      },
+
+      payments: {
+        success: successfulPayments,
+        failed: failedPayments,
+        pending: pendingPayments,
+      },
+    };
+  }
+
+  async getAllSubscriptions(query: GetSubscriptionsDto) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        status,
+        paymentStatus,
+        sortBy = 'createdAt',
+        sortOrder = 'DESC',
+      } = query;
+
+      const qb = this.subscriptionRepository
+        .createQueryBuilder('subscription')
+        .leftJoinAndSelect('subscription.user', 'user')
+        .leftJoinAndSelect('subscription.plan', 'plan');
+
+      if (search) {
+        qb.andWhere(
+          `
+          (
+            user.fName ILIKE :search
+            OR user.lName ILIKE :search
+            OR user.email ILIKE :search
+            OR plan.name ILIKE :search
+          )
+          `,
+          {
+            search: `%${search}%`,
+          },
+        );
+      }
+
+      if (status) {
+        qb.andWhere('subscription.status = :status', { status });
+      }
+
+      if (paymentStatus) {
+        qb.andWhere('subscription.paymentStatus = :paymentStatus', {
+          paymentStatus,
+        });
+      }
+
+      const allowedSortFields = [
+        'createdAt',
+        'startDate',
+        'endDate',
+        'status',
+        'paymentStatus',
+      ];
+
+      const orderBy = allowedSortFields.includes(sortBy)
+        ? `subscription.${sortBy}`
+        : 'subscription.createdAt';
+
+      qb.orderBy(orderBy, sortOrder);
+      qb.skip((page - 1) * limit);
+      qb.take(limit);
+      const [subscriptions, total] = await qb.getManyAndCount();
+      return {
+        success: true,
+        message: 'Subscriptions fetched successfully.',
+        data: subscriptions,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch subscriptions.',
+      );
+    }
   }
 }

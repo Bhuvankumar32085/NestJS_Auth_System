@@ -5,9 +5,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { Category } from '../category/entities/category.entitiy';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Transaction, Category]), JwtModule],
+  imports: [
+    TypeOrmModule.forFeature([Transaction, Category]),
+    JwtModule,
+    SubscriptionModule,
+  ],
   providers: [TransactionService],
   controllers: [TransactionController],
 })

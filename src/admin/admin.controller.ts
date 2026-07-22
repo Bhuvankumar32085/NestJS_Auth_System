@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminRoleGuard } from './admin-role/admin-role.guard';
 import { PaginationDto } from './dto/pagination.dto';
 import { AdminService } from './admin.service';
+import { GetSubscriptionsDto } from './dto/get.subscriptions.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -26,5 +27,17 @@ export class AdminController {
     @Query() paginationDto: PaginationDto,
   ) {
     return this.adminService.findTransactionsByUser(userId, paginationDto);
+  }
+
+  @Get('subscriptions/stats')
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  getSubscriptionStats() {
+    return this.adminService.getSubscriptionStats();
+  }
+
+  @Get('subscriptions')
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  getAllSubscriptions(@Query() query: GetSubscriptionsDto) {
+    return this.adminService.getAllSubscriptions(query);
   }
 }

@@ -8,6 +8,7 @@ import { User } from '../user/entities/user.entity';
 import { Plan } from '../plan/entities/plan.entitiy';
 import { PaymentModule } from '../payment/payment.module';
 import { ConfigModule } from '@nestjs/config';
+import { SubscriptionGuard } from './guards/subscription.guard';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule,
   ],
   controllers: [SubscriptionController],
-  providers: [SubscriptionService],
+  providers: [SubscriptionService, SubscriptionGuard],
+  exports: [SubscriptionService, SubscriptionGuard],
 })
 export class SubscriptionModule {}

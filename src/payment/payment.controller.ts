@@ -16,10 +16,7 @@ export class PaymentController {
     @Req() req: Request & { rawBody: Buffer },
     @Headers('x-razorpay-signature') signature: string,
   ) {
-    return this.paymentService.handleWebhook(
-      req.rawBody,
-      signature,
-    );
+    return this.paymentService.handleWebhook(req.rawBody, signature);
   }
 }
 

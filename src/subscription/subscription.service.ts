@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -120,5 +122,56 @@ export class SubscriptionService {
         key: this.configService.get('RAZORPAY_KEY_ID') as string,
       },
     };
+  }
+
+  async hasActiveSubscription(userId: string): Promise<boolean> {
+    try {
+      const subscription = await this.subscriptionRepository.findOne({
+        where: {
+          user: { id: userId },
+        },
+        relations: ['user', 'plan'],
+        order: {
+          createdAt: 'DESC',
+        },
+      });
+
+      if (!subscription) {
+        throw new NotFoundException(
+          'No subscription found. Please purchase a plan first.',
+        );
+      }
+
+      if (subscription.paymentStatus !== PaymentStatus.SUCCESS) {
+        throw new ForbiddenException(
+          'Payment is pending or failed. Please complete your payment.',
+        );
+      }
+
+      if (subscription.status !== SubscriptionStatus.ACTIVE) {
+        throw new ForbiddenException(
+          `Your subscription is ${subscription.status.toLowerCase()}.`,
+        );
+      }
+
+      if (subscription.endDate && subscription.endDate.getTime() < Date.now()) {
+        throw new ForbiddenException(
+          'Your subscription has expired. Please renew your plan.',
+        );
+      }
+
+      return true;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Unable to verify subscription. Please try again later.',
+      );
+    }
   }
 }
