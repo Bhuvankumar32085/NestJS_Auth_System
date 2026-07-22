@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Transaction } from './entities/transaction.entity';
+import { Transaction, TransactionType } from './entities/transaction.entity';
 import { QueryFailedError, Repository } from 'typeorm';
 import { Category } from '../category/entities/category.entitiy';
 import { UpdateTransactionDto } from './dto/updateTransaction.dto';
@@ -295,40 +295,76 @@ export class TransactionService {
       });
     }
   }
-  
-  async exportTransactions(userId: string, res: Response): Promise<void> {
-    try {
-      const transactions = await this.transactionRepository.find({
-        where: {
-          user: {
-            id: userId,
-          },
-        },
-        relations: ['category'],
-        order: {
-          date: 'DESC',
-        },
-      });
 
-      if (!transactions.length) {
-        throw new NotFoundException('No transactions found to export.');
+  async exportTransactions(
+    userId: string,
+    res: Response,
+    month?: number,
+    year?: number,
+  ): Promise<void> {
+    try {
+      const qb = this.transactionRepository
+        .createQueryBuilder('transaction')
+        .leftJoinAndSelect('transaction.category', 'category')
+        .leftJoin('transaction.user', 'user')
+        .where('user.id = :userId', { userId });
+
+      // Filter by month & year (optional)
+      if (month && year) {
+        qb.andWhere('EXTRACT(MONTH FROM transaction.date) = :month', {
+          month,
+        }).andWhere('EXTRACT(YEAR FROM transaction.date) = :year', {
+          year,
+        });
       }
 
-      const csvData = transactions.map((transaction) => ({
+      qb.orderBy('transaction.date', 'DESC');
+
+      const transactions = await qb.getMany();
+
+      if (!transactions.length) {
+        throw new NotFoundException(
+          'No transactions found for the selected period.',
+        );
+      }
+
+      // Calculate summary
+      const totalIncome = transactions
+        .filter((t) => t.type === TransactionType.INCOME)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const totalExpense = transactions
+        .filter((t) => t.type === TransactionType.EXPENSE)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const netSavings = totalIncome - totalExpense;
+
+      // Transaction rows
+      const transactionRows = transactions.map((transaction, index) => ({
+        'Sr No': index + 1,
         Title: transaction.title,
-        Amount: transaction.amount,
-        Type: transaction.type,
         Category: transaction.category.name,
+        Type: transaction.type,
+        Amount: Number(transaction.amount),
         Description: transaction.description ?? '',
-        Date: transaction.date,
+        Date: new Date(transaction.date).toLocaleDateString('en-GB'),
       }));
 
+      // CSV content
       const parser = new Parser();
+      const transactionCsv = parser.parse(transactionRows);
 
-      const csv = parser.parse(csvData);
+      const csv = `Expense Tracker Report
+         Month,${month && year ? `${month}/${year}` : 'All Records'}
+         Total Income,${totalIncome.toFixed(2)}
+         Total Expense,${totalExpense.toFixed(2)}
+         Net Savings,${netSavings.toFixed(2)}
+         
+         Transactions
+         
+         ${transactionCsv}`;
 
       res.setHeader('Content-Type', 'text/csv');
-
       res.setHeader(
         'Content-Disposition',
         'attachment; filename="transactions.csv"',
@@ -336,6 +372,7 @@ export class TransactionService {
 
       res.status(200).send(csv);
     } catch (error) {
+      console.error(error);
       if (error instanceof NotFoundException) {
         throw error;
       }

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Request,
   Res,
@@ -69,7 +70,17 @@ export class TransactionController {
 
   @Get('export')
   @UseGuards(JwtAuthGuard, SubscriptionGuard)
-  exportTransactions(@Req() req: AuthRequest, @Res() res: Response) {
-    return this.transactionService.exportTransactions(req.user.id, res);
+  exportTransactions(
+    @Req() req: AuthRequest,
+    @Res() res: Response,
+    @Query('month') month?: number,
+    @Query('year') year?: number,
+  ) {
+    return this.transactionService.exportTransactions(
+      req.user.id,
+      res,
+      month,
+      year,
+    );
   }
 }
